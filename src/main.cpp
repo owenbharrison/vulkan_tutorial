@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include <cstdlib>
 
-#include <vector>
-
 const uint32_t WIDTH=800;
 const uint32_t HEIGHT=600;
 class HelloTriangleApplication {
@@ -59,19 +57,6 @@ private:
 
 		if(vkCreateInstance(&createInfo, nullptr, &instance)!=VK_SUCCESS) {
 			throw std::runtime_error("failed to create instance!");
-		}
-
-		uint32_t extensionCount=0;
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-		std::vector<VkExtensionProperties> extensions(extensionCount);
-	
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-	
-		std::cout<<"available extensions:\n";
-
-		for(const auto& extension:extensions) {
-			std::cout<<'\t'<<extension.extensionName<<'\n';
 		}
 	}
 
