@@ -8,6 +8,8 @@
 #include <vector>
 #include <cstring>
 
+#include <optional>
+
 const uint32_t WIDTH=800;
 const uint32_t HEIGHT=600;
 
@@ -37,6 +39,15 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 	}
 }
 
+struct QueueFamilyIndices {
+	std::optional<uint32_t> graphics_family;
+
+	bool isComplete() {
+		return graphics_family.has_value();
+	}
+};
+
+
 class HelloTriangleApplication {
 public:
 	void run() {
@@ -51,6 +62,8 @@ private:
 
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debug_messenger;
+
+	VkPhysicalDevice physical_device=VK_NULL_HANDLE;
 
 	std::vector<const char*> getRequiredExtensions() {
 		uint32_t glfw_ext_ct=0;
@@ -147,9 +160,63 @@ private:
 		}
 	}
 
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+		QueueFamilyIndices indices;
+
+		uint32_t queueFamilyCount=0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		int i=0;
+		for(const auto& queueFamily:queueFamilies) {
+			if(queueFamily.queueFlags&VK_QUEUE_GRAPHICS_BIT) {
+				indices.graphics_family=i;
+			}
+
+			if(indices.isComplete()) {
+				break;
+			}
+
+			i++;
+		}
+
+		return indices;
+	}
+
+	bool isDeviceSuitable(VkPhysicalDevice device) {
+		QueueFamilyIndices indices=findQueueFamilies(device);
+
+		return indices.isComplete();
+	}
+
+	void pickPhysicalDevice() {
+		uint32_t device_ct=0;
+		vkEnumeratePhysicalDevices(instance, &device_ct, nullptr);
+		if(device_ct==0) {
+			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+		}
+
+		std::vector<VkPhysicalDevice> devices(device_ct);
+		vkEnumeratePhysicalDevices(instance, &device_ct, devices.data());
+	
+		for(const auto& device:devices) {
+			if(isDeviceSuitable(device)) {
+				physical_device=device;
+				break;
+			}
+		}
+
+		if(physical_device==VK_NULL_HANDLE) {
+			throw std::runtime_error("failed to find a suitable GPU!");
+		}
+	}
+
 	void initVulkan() {
 		createInstance();
 		setupDebugMessenger();
+		pickPhysicalDevice();
 	}
 
 	void initWindow() {
